@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoTrack — Campus Sustainability Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+:root {
+  --forest: #1a4d3e;
+  --emerald: #0d9488;
+  --sage: #6b8f71;
+  --mint: #d1fae5;
+  --soft-mint: #ecfdf5;
+  --off-white: #f8faf9;
+  --card-bg: #ffffff;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --accent-orange: #f59e0b;
+  --accent-yellow: #fbbf24;
+  --danger: #ef4444;
+  --success: #10b981;
+  --info: #3b82f6;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+  --radius: 12px;
+  --radius-sm: 8px;
+  --sidebar-width: 260px;
+  --sidebar-collapsed: 72px;
+  --transition: 0.25s ease;
+}
+
+[data-theme="dark"] {
+  --forest: #34d399;
+  --emerald: #2dd4bf;
+  --sage: #6ee7b7;
+  --mint: #134e4a;
+  --soft-mint: #0f172a;
+  --off-white: #0f172a;
+  --card-bg: #1e293b;
+  --text-dark: #f1f5f9;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+  --shadow: 0 4px 6px -1px rgba(0,0,0,0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--off-white);
+  color: var(--text-dark);
+  line-height: 1.5;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Layout */
+.app { display: flex; min-height: 100vh; }
+.sidebar {
+  width: var(--sidebar-width);
+  background: var(--card-bg);
+  border-right: 1px solid var(--border);
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  transition: width var(--transition), transform var(--transition);
+  overflow: hidden;
+}
+.sidebar.collapsed { width: var(--sidebar-collapsed); }
+.sidebar-header {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  min-height: 72px;
+}
+.logo {
+  width: 36px; height: 36px;
+  background: linear-gradient(135deg, var(--forest), var(--emerald));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: white; flex-shrink: 0;
+}
+.logo-text { font-weight: 700; font-size: 1.15rem; white-space: nowrap; }
+.logo-text span { color: var(--emerald); }
+.sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 2px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--soft-mint); color: var(--forest); }
+.nav-item.active { background: var(--mint); color: var(--forest); font-weight: 600; }
+.nav-item i, .nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.sidebar.collapsed .nav-item span, .sidebar.collapsed .logo-text { display: none; }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 12px; }
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.main { flex: 1; margin-left: var(--sidebar-width); transition: margin-left var(--transition); display: flex; flex-direction: column; min-height: 100vh; }
+.sidebar.collapsed ~ .main { margin-left: var(--sidebar-collapsed); }
+
+.topbar {
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+  gap: 16px;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.menu-btn {
+  display: none; background: none; border: none; cursor: pointer;
+  padding: 8px; border-radius: 8px; color: var(--text-dark);
+}
+.menu-btn:hover { background: var(--soft-mint); }
+.search-box {
+  position: relative; flex: 1; max-width: 320px;
+}
+.search-box input {
+  width: 100%; padding: 9px 14px 9px 40px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--off-white); color: var(--text-dark);
+  font-size: 0.9rem; outline: none; transition: border 0.2s;
+}
+.search-box input:focus { border-color: var(--emerald); }
+.search-box svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); width: 18px; height: 18px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.icon-btn {
+  width: 40px; height: 40px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--card-bg);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text-muted); position: relative;
+  transition: all 0.2s;
+}
+.icon-btn:hover { background: var(--soft-mint); color: var(--forest); border-color: var(--emerald); }
+.badge-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; background: var(--danger);
+  border-radius: 50%; border: 2px solid var(--card-bg);
+}
+.profile-chip {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 12px 6px 6px; border-radius: 30px;
+  border: 1px solid var(--border); cursor: pointer;
+  transition: all 0.2s; background: var(--card-bg);
+}
+.profile-chip:hover { border-color: var(--emerald); background: var(--soft-mint); }
+.avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--emerald), var(--sage));
+  display: flex; align-items: center; justify-content: center;
+  color: white; font-weight: 600; font-size: 0.85rem;
+}
+.profile-chip .name { font-size: 0.85rem; font-weight: 600; }
+.profile-chip .level { font-size: 0.7rem; color: var(--text-muted); }
+
+.content { flex: 1; padding: 24px; max-width: 1400px; width: 100%; margin: 0 auto; }
+.page { display: none; animation: fadeIn 0.3s ease; }
+.page.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.page-header { margin-bottom: 24px; }
+.page-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 4px; }
+.page-header p { color: var(--text-muted); font-size: 0.95rem; }
+
+/* Cards */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card:hover { box-shadow: var(--shadow); }
+.card-title { font-size: 0.95rem; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.grid-6 { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; }
+
+/* Stats cards */
+.stat-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.stat-card .icon-wrap {
+  width: 42px; height: 42px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.stat-card .icon-wrap.green { background: #d1fae5; color: #059669; }
+.stat-card .icon-wrap.blue { background: #dbeafe; color: #2563eb; }
+.stat-card .icon-wrap.amber { background: #fef3c7; color: #d97706; }
+.stat-card .icon-wrap.teal { background: #ccfbf1; color: #0d9488; }
+.stat-card .icon-wrap.purple { background: #ede9fe; color: #7c3aed; }
+.stat-card .icon-wrap.rose { background: #ffe4e6; color: #e11d48; }
+[data-theme="dark"] .stat-card .icon-wrap.green { background: #064e3b; color: #34d399; }
+[data-theme="dark"] .stat-card .icon-wrap.blue { background: #1e3a5f; color: #60a5fa; }
+[data-theme="dark"] .stat-card .icon-wrap.amber { background: #78350f; color: #fbbf24; }
+[data-theme="dark"] .stat-card .icon-wrap.teal { background: #134e4a; color: #2dd4bf; }
+[data-theme="dark"] .stat-card .icon-wrap.purple { background: #4c1d95; color: #a78bfa; }
+[data-theme="dark"] .stat-card .icon-wrap.rose { background: #881337; color: #fb7185; }
+.stat-card .label { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px; }
+.stat-card .value { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+.stat-card .trend { font-size: 0.75rem; margin-top: 6px; display: flex; align-items: center; gap: 4px; }
+.stat-card .trend.up { color: var(--success); }
+.stat-card .trend.down { color: var(--danger); }
+
+/* Welcome */
+.welcome-section {
+  background: linear-gradient(135deg, #1a4d3e 0%, #0d9488 100%);
+  border-radius: var(--radius);
+  padding: 28px;
+  color: white;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.welcome-section::after {
+  content: '';
+  position: absolute; right: -40px; top: -40px;
+  width: 200px; height: 200px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 50%;
+}
+.welcome-section h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+.welcome-section p { opacity: 0.9; font-size: 0.95rem; margin-bottom: 16px; }
+.welcome-meta { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.85rem; opacity: 0.85; }
+.quick-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 18px; border-radius: 10px;
+  font-size: 0.875rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.2s;
+  font-family: inherit;
+}
+.btn-primary { background: white; color: var(--forest); }
+.btn-primary:hover { background: var(--mint); transform: translateY(-1px); }
+.btn-secondary { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); }
+.btn-secondary:hover { background: rgba(255,255,255,0.25); }
+.btn-outline {
+  background: transparent; border: 1px solid var(--border);
+  color: var(--text-dark);
+}
+.btn-outline:hover { background: var(--soft-mint); border-color: var(--emerald); color: var(--forest); }
+.btn-emerald { background: var(--emerald); color: white; }
+.btn-emerald:hover { background: #0f766e; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-danger:hover { background: #dc2626; }
+.btn-sm { padding: 7px 12px; font-size: 0.8rem; }
+.btn-ghost { background: transparent; color: var(--text-muted); border: none; }
+.btn-ghost:hover { color: var(--forest); background: var(--soft-mint); }
+
+/* Score circle */
+.score-card { display: flex; align-items: center; gap: 24px; }
+.score-ring {
+  position: relative; width: 120px; height: 120px; flex-shrink: 0;
+}
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .bg { fill: none; stroke: var(--border); stroke-width: 10; }
+.score-ring .fg { fill: none; stroke: var(--emerald); stroke-width: 10; stroke-linecap: round; transition: stroke-dashoffset 0.8s ease; }
+.score-value {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.score-value .num { font-size: 1.8rem; font-weight: 800; color: var(--forest); }
+.score-value .label { font-size: 0.7rem; color: var(--text-muted); }
+.score-info h3 { font-size: 1.1rem; margin-bottom: 6px; }
+.score-info p { font-size: 0.85rem; color: var(--text-muted); }
+
+/* Tables */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); }
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid var(--border); }
+th { background: var(--soft-mint); font-weight: 600; color: var(--text-muted); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--soft-mint); }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600;
+}
+.badge-green { background: #d1fae5; color: #065f46; }
+.badge-blue { background: #dbeafe; color: #1e40af; }
+.badge-amber { background: #fef3c7; color: #92400e; }
+.badge-red { background: #fee2e2; color: #991b1b; }
+.badge-purple { background: #ede9fe; color: #5b21b6; }
+.badge-gray { background: #f1f5f9; color: #475569; }
+[data-theme="dark"] .badge-green { background: #064e3b; color: #6ee7b7; }
+[data-theme="dark"] .badge-blue { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .badge-amber { background: #78350f; color: #fcd34d; }
+[data-theme="dark"] .badge-red { background: #7f1d1d; color: #fca5a5; }
+[data-theme="dark"] .badge-purple { background: #4c1d95; color: #c4b5fd; }
+[data-theme="dark"] .badge-gray { background: #334155; color: #cbd5e1; }
+
+/* Progress */
+.progress-bar {
+  height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 4px;
+  background: linear-gradient(90deg, var(--emerald), var(--sage));
+  transition: width 0.6s ease;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,0.5);
+  z-index: 200; display: none; align-items: center; justify-content: center;
+  padding: 20px; backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--card-bg); border-radius: 16px;
+  width: 100%; max-width: 520px; max-height: 90vh;
+  overflow-y: auto; box-shadow: var(--shadow-lg);
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: none; } }
+.modal-header {
+  padding: 20px 24px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h3 { font-size: 1.15rem; font-weight: 700; }
+.modal-body { padding: 24px; }
+.modal-footer {
+  padding: 16px 24px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 10px;
+}
+.close-btn {
+  background: none; border: none; cursor: pointer; color: var(--text-muted);
+  padding: 4px; border-radius: 6px;
+}
+.close-btn:hover { background: var(--soft-mint); color: var(--text-dark); }
+
+/* Forms */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: var(--text-dark); }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 10px;
+  background: var(--off-white); color: var(--text-dark);
+  font-size: 0.9rem; font-family: inherit; outline: none;
+  transition: border 0.2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--emerald);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-error { color: var(--danger); font-size: 0.8rem; margin-top: 4px; display: none; }
+
+/* Toast */
+.toast-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 300;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.toast {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 18px;
+  box-shadow: var(--shadow-lg); display: flex; align-items: center; gap: 12px;
+  min-width: 280px; max-width: 380px;
+  animation: toastIn 0.3s ease;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: none; } }
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--danger); }
+.toast.info { border-left: 4px solid var(--info); }
+.toast .msg { flex: 1; font-size: 0.875rem; }
+
+/* Notifications panel */
+.notif-panel {
+  position: absolute; top: 50px; right: 0;
+  width: 340px; max-height: 420px;
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow-lg);
+  display: none; flex-direction: column; z-index: 60;
+  overflow: hidden;
+}
+.notif-panel.open { display: flex; }
+.notif-header {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.notif-header h4 { font-size: 0.95rem; }
+.notif-list { overflow-y: auto; flex: 1; }
+.notif-item {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  cursor: pointer; transition: background 0.15s;
+  font-size: 0.85rem;
+}
+.notif-item:hover { background: var(--soft-mint); }
+.notif-item.unread { background: var(--mint); }
+.notif-item .time { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+.notif-empty { padding: 30px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+/* Challenge cards */
+.challenge-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; background: var(--card-bg);
+  transition: all 0.2s; display: flex; flex-direction: column;
+}
+.challenge-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.challenge-card .diff {
+  font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; margin-bottom: 8px;
+}
+.challenge-card h3 { font-size: 1.05rem; margin-bottom: 6px; }
+.challenge-card p { font-size: 0.85rem; color: var(--text-muted); flex: 1; margin-bottom: 14px; }
+.challenge-meta { display: flex; gap: 12px; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 14px; flex-wrap: wrap; }
+
+/* Achievement badges */
+.badge-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
+.ach-card {
+  text-align: center; padding: 20px 14px;
+  border: 1px solid var(--border); border-radius: var(--radius);
+  background: var(--card-bg); transition: all 0.2s;
+}
+.ach-card.locked { opacity: 0.55; filter: grayscale(0.6); }
+.ach-card.unlocked { border-color: var(--emerald); }
+.ach-icon {
+  width: 56px; height: 56px; border-radius: 50%;
+  margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; background: var(--soft-mint); color: var(--emerald);
+}
+.ach-card h4 { font-size: 0.9rem; margin-bottom: 4px; }
+.ach-card p { font-size: 0.75rem; color: var(--text-muted); }
+
+/* Leaderboard */
+.lb-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.lb-item:last-child { border-bottom: none; }
+.lb-rank {
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 0.85rem; flex-shrink: 0;
+}
+.lb-rank.gold { background: #fef3c7; color: #b45309; }
+.lb-rank.silver { background: #f1f5f9; color: #475569; }
+.lb-rank.bronze { background: #ffedd5; color: #c2410c; }
+.lb-rank.normal { background: var(--soft-mint); color: var(--text-muted); }
+.lb-info { flex: 1; }
+.lb-info .name { font-weight: 600; font-size: 0.9rem; }
+.lb-info .meta { font-size: 0.75rem; color: var(--text-muted); }
+.lb-points { font-weight: 700; color: var(--emerald); }
+
+/* Tips */
+.tip-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 28px; text-align: center;
+  max-width: 560px; margin: 0 auto;
+}
+.tip-card .tip-cat {
+  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  font-size: 0.75rem; font-weight: 600; margin-bottom: 16px;
+  background: var(--mint); color: var(--forest);
+}
+.tip-card .tip-text { font-size: 1.15rem; font-weight: 500; line-height: 1.6; margin-bottom: 20px; }
+.tip-nav { display: flex; justify-content: center; gap: 10px; }
+
+/* Campus map */
+.campus-map {
+  position: relative; background: linear-gradient(160deg, #d1fae5 0%, #a7f3d0 50%, #6ee7b7 100%);
+  border-radius: var(--radius); min-height: 420px;
+  border: 1px solid var(--border); overflow: hidden;
+}
+[data-theme="dark"] .campus-map {
+  background: linear-gradient(160deg, #134e4a 0%, #0f766e 50%, #115e59 100%);
+}
+.map-location {
+  position: absolute; padding: 8px 14px;
+  background: var(--card-bg); border: 2px solid var(--emerald);
+  border-radius: 10px; font-size: 0.8rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; box-shadow: var(--shadow);
+  white-space: nowrap;
+}
+.map-location:hover, .map-location.active {
+  background: var(--emerald); color: white; transform: scale(1.05);
+  z-index: 5;
+}
+.map-detail {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-top: 16px;
+}
+
+/* Filters bar */
+.filters-bar {
+  display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;
+  align-items: center;
+}
+.filters-bar select, .filters-bar input {
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--card-bg); color: var(--text-dark); font-size: 0.85rem;
+  outline: none;
+}
+.filters-bar select:focus, .filters-bar input:focus { border-color: var(--emerald); }
+
+/* Empty state */
+.empty-state {
+  text-align: center; padding: 48px 20px; color: var(--text-muted);
+}
+.empty-state svg { margin-bottom: 12px; opacity: 0.4; }
+.empty-state h3 { font-size: 1.1rem; margin-bottom: 6px; color: var(--text-dark); }
+
+/* Demo banner */
+.demo-banner {
+  background: #fef3c7; color: #92400e; padding: 8px 16px;
+  font-size: 0.8rem; text-align: center; border-bottom: 1px solid #fde68a;
+}
+[data-theme="dark"] .demo-banner { background: #78350f; color: #fcd34d; border-color: #92400e; }
+
+/* Level progress */
+.level-bar {
+  background: var(--soft-mint); border-radius: var(--radius);
+  padding: 16px 20px; margin-bottom: 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.level-bar .level-badge {
+  background: linear-gradient(135deg, var(--forest), var(--emerald));
+  color: white; padding: 6px 14px; border-radius: 20px;
+  font-weight: 700; font-size: 0.85rem;
+}
+
+/* Goal card */
+.goal-card {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; background: var(--card-bg);
+}
+.goal-card .goal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.goal-card h4 { font-size: 0.95rem; }
+.goal-card .goal-actions { display: flex; gap: 4px; }
+
+/* Mobile overlay */
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4); z-index: 90;
+}
+.sidebar-overlay.open { display: block; }
+
+/* Responsive */
+@media (max-width: 1100px) {
+  .grid-6 { grid-template-columns: repeat(3, 1fr); }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.mobile-open { transform: translateX(0); width: var(--sidebar-width); }
+  .sidebar.collapsed { width: var(--sidebar-width); }
+  .main { margin-left: 0 !important; }
+  .menu-btn { display: flex; }
+  .search-box { max-width: 180px; }
+}
+@media (max-width: 640px) {
+  .grid-6, .grid-4, .grid-3 { grid-template-columns: 1fr; }
+  .content { padding: 16px; }
+  .welcome-section { padding: 20px; }
+  .form-row { grid-template-columns: 1fr; }
+  .profile-chip .name, .profile-chip .level { display: none; }
+  .topbar { padding: 10px 14px; }
+  .score-card { flex-direction: column; text-align: center; }
+  .notif-panel { width: calc(100vw - 32px); right: -10px; }
+}
+
+/* Utility */
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.mt-2 { margin-top: 8px; }
+.mt-3 { margin-top: 12px; }
+.mt-4 { margin-top: 16px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.text-muted { color: var(--text-muted); }
+.text-sm { font-size: 0.85rem; }
+.font-semibold { font-weight: 600; }
+.hidden { display: none !important; }
+.w-full { width: 100%; }
+</style>
+</head>
+<body>
+<div class="demo-banner">Demo Mode — All data is stored locally in this browser. No data is sent to any server.</div>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo"><i data-lucide="leaf" style="width:20px;height:20px;"></i></div>
+      <div class="logo-text">Eco<span>Track</span></div>
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+      <button class="nav-item active" data-page="overview"><i data-lucide="layout-dashboard"></i><span>Overview</span></button>
+      <button class="nav-item" data-page="analytics"><i data-lucide="bar-chart-2"></i><span>Analytics</span></button>
+      <button class="nav-item" data-page="activities"><i data-lucide="activity"></i><span>Eco Activities</span></button>
+      <button class="nav-item" data-page="goals"><i data-lucide="target"></i><span>Sustainability Goals</span></button>
+      <button class="nav-item" data-page="challenges"><i data-lucide="trophy"></i><span>Eco Challenges</span></button>
+      <button class="nav-item" data-page="leaderboard"><i data-lucide="medal"></i><span>Leaderboard</span></button>
+      <button class="nav-item" data-page="reports"><i data-lucide="alert-triangle"></i><span>Report Issue</span></button>
+      <button class="nav-item" data-page="achievements"><i data-lucide="award"></i><span>Achievements</span></button>
+      <button class="nav-item" data-page="tips"><i data-lucide="lightbulb"></i><span>Eco Tips</span></button>
+      <button class="nav-item" data-page="map"><i data-lucide="map"></i><span>Campus Map</span></button>
+      <button class="nav-item" data-page="profile"><i data-lucide="user"></i><span>My Profile</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <div>EcoTrack v1.0</div>
+      <div style="margin-top:4px;">Campus Sustainability</div>
+    </div>
+  </aside>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-btn" id="menuBtn" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+        <div class="search-box">
+          <i data-lucide="search"></i>
+          <input type="text" id="globalSearch" placeholder="Search activities, reports..." aria-label="Search">
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="icon-btn" id="themeToggle" title="Toggle dark mode" aria-label="Toggle theme">
+          <i data-lucide="moon" id="themeIcon"></i>
+        </button>
+        <div style="position:relative;">
+          <button class="icon-btn" id="notifBtn" title="Notifications" aria-label="Notifications">
+            <i data-lucide="bell"></i>
+            <span class="badge-dot hidden" id="notifDot"></span>
+          </button>
+          <div class="notif-panel" id="notifPanel">
+            <div class="notif-header">
+              <h4>Notifications</h4>
+              <div class="flex gap-2">
+                <button class="btn btn-ghost btn-sm" id="markAllRead">Mark all read</button>
+                <button class="btn btn-ghost btn-sm" id="clearNotifs">Clear</button>
+              </div>
+            </div>
+            <div class="notif-list" id="notifList"></div>
+          </div>
+        </div>
+        <div class="profile-chip" id="profileChip" title="Go to profile">
+          <div class="avatar" id="topAvatar">S</div>
+          <div>
+            <div class="name" id="topName">Student</div>
+            <div class="level" id="topLevel">Eco Starter</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- OVERVIEW -->
+      <section class="page active" id="page-overview">
+        <div class="welcome-section">
+          <h2 id="welcomeMsg">Good day, Student 🌱</h2>
+          <p>Here's how your campus is making a difference for the planet.</p>
+          <div class="welcome-meta">
+            <span id="currentDate"></span>
+            <span>• Campus Sustainability: Active</span>
+            <span>• Demo Mode</span>
+          </div>
+          <div class="quick-actions">
+            <button class="btn btn-primary" onclick="openActivityModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Log Activity</button>
+            <button class="btn btn-secondary" onclick="navigate('reports')"><i data-lucide="alert-triangle" style="width:16px;height:16px;"></i> Report Issue</button>
+            <button class="btn btn-secondary" onclick="navigate('challenges')"><i data-lucide="trophy" style="width:16px;height:16px;"></i> View Challenges</button>
+          </div>
+        </div>
+
+        <div class="grid-6 mb-4" id="statCards">
+          <!-- filled by JS -->
+        </div>
+
+        <div class="grid-2 mb-4">
+          <div class="card">
+            <div class="card-title"><i data-lucide="gauge" style="width:18px;height:18px;"></i> Campus EcoScore</div>
+            <div class="score-card">
+              <div class="score-ring">
+                <svg width="120" height="120" viewBox="0 0 120 120">
+                  <circle class="bg" cx="60" cy="60" r="50"></circle>
+                  <circle class="fg" id="scoreCircle" cx="60" cy="60" r="50" stroke-dasharray="314" stroke-dashoffset="314"></circle>
+                </svg>
+                <div class="score-value">
+                  <div class="num" id="scoreNum">72</div>
+                  <div class="label">/ 100</div>
+                </div>
+              </div>
+              <div class="score-info">
+                <h3 id="scoreStatus">Good Progress</h3>
+                <p id="scoreDesc">Illustrative EcoScore based on logged campus activities. Not a scientifically validated metric.</p>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><i data-lucide="zap" style="width:18px;height:18px;"></i> Quick Actions</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <button class="btn btn-outline w-full" onclick="openActivityModal()"><i data-lucide="plus-circle" style="width:16px;height:16px;"></i> Log Eco Activity</button>
+              <button class="btn btn-outline w-full" onclick="navigate('challenges')"><i data-lucide="flag" style="width:16px;height:16px;"></i> Join a Challenge</button>
+              <button class="btn btn-outline w-full" onclick="navigate('reports')"><i data-lucide="file-warning" style="width:16px;height:16px;"></i> Report an Issue</button>
+              <button class="btn btn-outline w-full" onclick="navigate('analytics')"><i data-lucide="line-chart" style="width:16px;height:16px;"></i> View Analytics</button>
+            </div>
+            <div class="level-bar mt-4" style="margin-bottom:0;">
+              <div class="level-badge" id="dashLevel">Eco Starter</div>
+              <div style="flex:1;">
+                <div class="flex-between text-sm mb-3">
+                  <span id="dashPoints">0 points</span>
+                  <span class="text-muted" id="dashNext">Next: Green Explorer</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="dashLevelBar" style="width:0%"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="flex-between mb-3">
+            <div class="card-title" style="margin:0;"><i data-lucide="history" style="width:18px;height:18px;"></i> Recent Activities</div>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('activities')">View all</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Activity</th><th>Category</th><th>Quantity</th><th>Date</th><th>Points</th></tr></thead>
+              <tbody id="recentActivitiesBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS -->
+      <section class="page" id="page-analytics">
+        <div class="page-header">
+          <h1>Analytics</h1>
+          <p>Visualize campus sustainability trends and activity distribution. Charts update with logged data.</p>
+        </div>
+        <div class="filters-bar">
+          <select id="chartRange">
+            <option value="7">Last 7 days</option>
+            <option value="30" selected>Last 30 days</option>
+            <option value="90">Last 90 days</option>
+          </select>
+        </div>
+        <div class="grid-2 mb-4">
+          <div class="card">
+            <div class="card-title">Sustainability Activity Trends</div>
+            <canvas id="trendChart" height="220"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-title">Activity Distribution</div>
+            <canvas id="distChart" height="220"></canvas>
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Waste Composition (Demo)</div>
+            <canvas id="wasteChart" height="220"></canvas>
+          </div>
+          <div class="card">
+            <div class="card-title">Activity Frequency</div>
+            <canvas id="freqChart" height="220"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACTIVITIES -->
+      <section class="page" id="page-activities">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1>Eco Activities</h1>
+            <p>Log and manage your sustainability actions. Data is stored locally.</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn btn-outline" onclick="exportCSV()"><i data-lucide="download" style="width:16px;height:16px;"></i> Export CSV</button>
+            <button class="btn btn-emerald" onclick="openActivityModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Log Activity</button>
+          </div>
+        </div>
+        <div class="filters-bar">
+          <input type="text" id="actSearch" placeholder="Search activities...">
+          <select id="actCatFilter">
+            <option value="">All Categories</option>
+            <option value="Waste Management">Waste Management</option>
+            <option value="Water Conservation">Water Conservation</option>
+            <option value="Energy Conservation">Energy Conservation</option>
+            <option value="Plantation">Plantation</option>
+            <option value="Plastic Reduction">Plastic Reduction</option>
+            <option value="Sustainable Transport">Sustainable Transport</option>
+          </select>
+          <select id="actSort">
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="points-desc">Points high–low</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Activity</th><th>Category</th><th>Quantity</th><th>Location</th><th>Date</th><th>Points</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="activitiesBody"></tbody>
+            </table>
+          </div>
+          <div id="actEmpty" class="empty-state hidden">
+            <i data-lucide="inbox" style="width:40px;height:40px;"></i>
+            <h3>No activities yet</h3>
+            <p>Log your first eco activity to get started.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- GOALS -->
+      <section class="page" id="page-goals">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1>Sustainability Goals</h1>
+            <p>Track progress toward campus environmental targets.</p>
+          </div>
+          <button class="btn btn-emerald" onclick="openGoalModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> Add Goal</button>
+        </div>
+        <div class="grid-2" id="goalsGrid"></div>
+      </section>
+
+      <!-- CHALLENGES -->
+      <section class="page" id="page-challenges">
+        <div class="page-header">
+          <h1>Eco Challenges</h1>
+          <p>Join challenges, track progress, and earn reward points.</p>
+        </div>
+        <div class="filters-bar">
+          <button class="btn btn-sm btn-emerald" data-chal-filter="all">All</button>
+          <button class="btn btn-sm btn-outline" data-chal-filter="available">Available</button>
+          <button class="btn btn-sm btn-outline" data-chal-filter="active">Active</button>
+          <button class="btn btn-sm btn-outline" data-chal-filter="completed">Completed</button>
+        </div>
+        <div class="grid-3" id="challengesGrid"></div>
+      </section>
+
+      <!-- LEADERBOARD -->
+      <section class="page" id="page-leaderboard">
+        <div class="page-header">
+          <h1>Leaderboard</h1>
+          <p>Demo Leaderboard — Sample Student Data. Rankings are simulated.</p>
+        </div>
+        <div class="filters-bar">
+          <button class="btn btn-sm btn-emerald" data-lb="alltime">All-time</button>
+          <button class="btn btn-sm btn-outline" data-lb="weekly">Weekly</button>
+        </div>
+        <div class="card" id="leaderboardList"></div>
+      </section>
+
+      <!-- REPORTS -->
+      <section class="page" id="page-reports">
+        <div class="page-header flex-between" style="flex-wrap:wrap;gap:12px;">
+          <div>
+            <h1>Environmental Issue Reports</h1>
+            <p>Reports are stored locally and are <strong>not</strong> sent to campus authorities.</p>
+          </div>
+          <button class="btn btn-emerald" onclick="openReportModal()"><i data-lucide="plus" style="width:16px;height:16px;"></i> New Report</button>
+        </div>
+        <div class="grid-4 mb-4" id="reportStats"></div>
+        <div class="filters-bar">
+          <input type="text" id="reportSearch" placeholder="Search reports...">
+          <select id="reportCatFilter">
+            <option value="">All Categories</option>
+            <option value="Water leakage">Water leakage</option>
+            <option value="Waste overflow">Waste overflow</option>
+            <option value="Plastic pollution">Plastic pollution</option>
+            <option value="Electricity wastage">Electricity wastage</option>
+            <option value="Damaged plantation">Damaged plantation</option>
+            <option value="Dirty campus area">Dirty campus area</option>
+            <option value="Air pollution">Air pollution</option>
+            <option value="Other">Other</option>
+          </select>
+          <select id="reportStatusFilter">
+            <option value="">All Statuses</option>
+            <option value="Reported">Reported</option>
+            <option value="Under Review">Under Review</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Category</th><th>Location</th><th>Severity</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="reportsBody"></tbody>
+            </table>
+          </div>
+          <div id="reportEmpty" class="empty-state hidden">
+            <h3>No reports found</h3>
+            <p>Submit a report or adjust filters.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ACHIEVEMENTS -->
+      <section class="page" id="page-achievements">
+        <div class="page-header">
+          <h1>Achievements & Badges</h1>
+          <p>Unlock badges by completing eco activities and challenges.</p>
+        </div>
+        <div class="badge-grid" id="achievementsGrid"></div>
+      </section>
+
+      <!-- TIPS -->
+      <section class="page" id="page-tips">
+        <div class="page-header">
+          <h1>Eco Tips</h1>
+          <p>Practical tips to reduce your environmental footprint on campus.</p>
+        </div>
+        <div class="filters-bar" id="tipFilters">
+          <button class="btn btn-sm btn-emerald" data-tip-cat="all">All</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="Water">Water</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="Energy">Energy</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="Waste">Waste</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="Transport">Transport</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="Biodiversity">Biodiversity</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="Plastic">Plastic</button>
+          <button class="btn btn-sm btn-outline" data-tip-cat="favorites">★ Favorites</button>
+        </div>
+        <div class="tip-card" id="tipCard">
+          <div class="tip-cat" id="tipCat">Water</div>
+          <div class="tip-text" id="tipText">Report leaking taps promptly to save water.</div>
+          <div class="tip-nav">
+            <button class="btn btn-outline btn-sm" id="prevTip"><i data-lucide="chevron-left" style="width:16px;height:16px;"></i> Prev</button>
+            <button class="btn btn-outline btn-sm" id="favTip"><i data-lucide="star" style="width:16px;height:16px;"></i> Favorite</button>
+            <button class="btn btn-outline btn-sm" id="nextTip">Next <i data-lucide="chevron-right" style="width:16px;height:16px;"></i></button>
+            <button class="btn btn-emerald btn-sm" id="randomTip">Random</button>
+          </div>
+        </div>
+        <div class="card mt-4">
+          <div class="card-title">Tip of the Day</div>
+          <p id="tipOfDay" class="text-sm"></p>
+        </div>
+      </section>
+
+      <!-- MAP -->
+      <section class="page" id="page-map">
+        <div class="page-header">
+          <h1>Campus Map</h1>
+          <p>Illustrative campus layout. Click locations to view local eco data.</p>
+        </div>
+        <div class="campus-map" id="campusMap">
+          <div class="map-location" style="top:15%;left:20%;" data-loc="Main Block">Main Block</div>
+          <div class="map-location" style="top:25%;left:55%;" data-loc="Library">Library</div>
+          <div class="map-location" style="top:45%;left:30%;" data-loc="Canteen">Canteen</div>
+          <div class="map-location" style="top:55%;left:60%;" data-loc="Computer Lab">Computer Lab</div>
+          <div class="map-location" style="top:70%;left:25%;" data-loc="Garden">Garden</div>
+          <div class="map-location" style="top:35%;left:75%;" data-loc="Parking Area">Parking Area</div>
+          <div class="map-location" style="top:65%;left:70%;" data-loc="Auditorium">Auditorium</div>
+        </div>
+        <div class="map-detail" id="mapDetail">
+          <h3>Select a location</h3>
+          <p class="text-muted text-sm">Click a campus location to see recorded activities, issues, and tips.</p>
+        </div>
+      </section>
+
+      <!-- PROFILE -->
+      <section class="page" id="page-profile">
+        <div class="page-header">
+          <h1>My Profile</h1>
+          <p>Your eco identity and contribution summary. No real authentication required.</p>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="flex gap-3 mb-4" style="align-items:center;">
+              <div class="avatar" id="profileAvatar" style="width:64px;height:64px;font-size:1.4rem;">S</div>
+              <div>
+                <h2 id="profileName">Student</h2>
+                <p class="text-muted text-sm" id="profileUsername">@student</p>
+                <div class="badge badge-green mt-2" id="profileLevel">Eco Starter</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="editName">Display Name</label>
+              <input type="text" id="editName" maxlength="40">
+            </div>
+            <div class="form-group">
+              <label for="editAvatar">Avatar Initial (1 character)</label>
+              <input type="text" id="editAvatar" maxlength="1">
+            </div>
+            <button class="btn btn-emerald" id="saveProfile">Save Profile</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Your Impact</div>
+            <div id="profileStats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:20px 0;">
+            <button class="btn btn-outline btn-danger w-full" id="resetDataBtn" style="border-color:var(--danger);color:var(--danger);">
+              <i data-lucide="trash-2" style="width:16px;height:16px;"></i> Reset Demo Data
+            </button>
+            <p class="text-sm text-muted mt-2">This clears all local activities, reports, and progress and restores demo data.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Activity Modal -->
+<div class="modal-overlay" id="activityModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="actModalTitle">Log Eco Activity</h3>
+      <button class="close-btn" onclick="closeModal('activityModal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="actEditId">
+      <div class="form-group">
+        <label>Category</label>
+        <select id="actCategory">
+          <option value="Waste Management">Waste Management</option>
+          <option value="Water Conservation">Water Conservation</option>
+          <option value="Energy Conservation">Energy Conservation</option>
+          <option value="Plantation">Plantation</option>
+          <option value="Plastic Reduction">Plastic Reduction</option>
+          <option value="Sustainable Transport">Sustainable Transport</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Activity Type</label>
+        <select id="actType"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Quantity</label>
+          <input type="number" id="actQty" min="0.1" step="0.1" value="1">
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <select id="actUnit"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Campus Location</label>
+        <select id="actLocation">
+          <option>Main Block</option>
+          <option>Library</option>
+          <option>Canteen</option>
+          <option>Computer Lab</option>
+          <option>Garden</option>
+          <option>Parking Area</option>
+          <option>Auditorium</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="actDate">
+      </div>
+      <div class="form-group">
+        <label>Description (optional)</label>
+        <textarea id="actDesc" placeholder="Brief note..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('activityModal')">Cancel</button>
+      <button class="btn btn-emerald" id="saveActivityBtn">Save Activity</button>
+    </div>
+  </div>
+</div>
+
+<!-- Report Modal -->
+<div class="modal-overlay" id="reportModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Report Environmental Issue</h3>
+      <button class="close-btn" onclick="closeModal('reportModal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Issue Category</label>
+        <select id="repCategory">
+          <option>Water leakage</option>
+          <option>Waste overflow</option>
+          <option>Plastic pollution</option>
+          <option>Electricity wastage</option>
+          <option>Damaged plantation</option>
+          <option>Dirty campus area</option>
+          <option>Air pollution</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Location</label>
+        <select id="repLocation">
+          <option>Main Block</option>
+          <option>Library</option>
+          <option>Canteen</option>
+          <option>Computer Lab</option>
+          <option>Garden</option>
+          <option>Parking Area</option>
+          <option>Auditorium</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Severity</label>
+        <select id="repSeverity">
+          <option>Low</option>
+          <option>Medium</option>
+          <option>High</option>
+          <option>Critical</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="repDesc" required placeholder="Describe the issue..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="repDate">
+      </div>
+      <div class="form-group">
+        <label>Image (optional preview)</label>
+        <input type="file" id="repImage" accept="image/*">
+        <img id="repImagePreview" style="max-width:100%;margin-top:8px;border-radius:8px;display:none;">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('reportModal')">Cancel</button>
+      <button class="btn btn-emerald" id="saveReportBtn">Submit Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- Goal Modal -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="goalModalTitle">Add Custom Goal</h3>
+      <button class="close-btn" onclick="closeModal('goalModal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="goalEditId">
+      <div class="form-group">
+        <label>Goal Title</label>
+        <input type="text" id="goalTitle" placeholder="e.g. Reduce paper waste">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="goalCategory">
+          <option value="Waste Management">Waste Management</option>
+          <option value="Water Conservation">Water Conservation</option>
+          <option value="Energy Conservation">Energy Conservation</option>
+          <option value="Plantation">Plantation</option>
+          <option value="Plastic Reduction">Plastic Reduction</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Target</label>
+          <input type="number" id="goalTarget" min="1" value="100">
+        </div>
+        <div class="form-group">
+          <label>Unit</label>
+          <input type="text" id="goalUnit" placeholder="kg / L / kWh / trees">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('goalModal')">Cancel</button>
+      <button class="btn btn-emerald" id="saveGoalBtn">Save Goal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <h3 id="confirmTitle">Confirm</h3>
+      <button class="close-btn" onclick="closeModal('confirmModal')"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p id="confirmMsg"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('confirmModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ===================== DATA & CONSTANTS =====================
+const STORAGE_KEYS = {
+  activities: 'ecotrack_activities',
+  reports: 'ecotrack_reports',
+  challenges: 'ecotrack_challenges',
+  goals: 'ecotrack_goals',
+  notifications: 'ecotrack_notifications',
+  profile: 'ecotrack_profile',
+  preferences: 'ecotrack_preferences',
+  favorites: 'ecotrack_favorites',
+  achievements: 'ecotrack_achievements'
+};
+
+const ACTIVITY_TYPES = {
+  'Waste Management': [
+    { type: 'Waste recycled', unit: 'kg', points: 10 },
+    { type: 'Waste segregated', unit: 'kg', points: 10 },
+    { type: 'Composting', unit: 'kg', points: 15 },
+    { type: 'E-waste collected', unit: 'kg', points: 20 }
+  ],
+  'Water Conservation': [
+    { type: 'Water saved', unit: 'L', points: 10 },
+    { type: 'Water leakage reported', unit: 'count', points: 10 },
+    { type: 'Water-saving action', unit: 'count', points: 10 }
+  ],
+  'Energy Conservation': [
+    { type: 'Lights switched off', unit: 'count', points: 10 },
+    { type: 'Equipment switched off', unit: 'count', points: 10 },
+    { type: 'Electricity saved', unit: 'kWh', points: 10 }
+  ],
+  'Plantation': [
+    { type: 'Tree planted', unit: 'trees', points: 25 },
+    { type: 'Plant maintained', unit: 'count', points: 10 },
+    { type: 'Plantation activity', unit: 'count', points: 10 }
+  ],
+  'Plastic Reduction': [
+    { type: 'Reusable bottle used', unit: 'count', points: 15 },
+    { type: 'Plastic avoided', unit: 'items', points: 15 },
+    { type: 'Plastic-free activity', unit: 'count', points: 15 }
+  ],
+  'Sustainable Transport': [
+    { type: 'Walked', unit: 'km', points: 15 },
+    { type: 'Cycled', unit: 'km', points: 15 },
+    { type: 'Public transport used', unit: 'trips', points: 15 },
+    { type: 'Carpooling', unit: 'trips', points: 15 }
+  ]
+};
+
+const LEVELS = [
+  { name: 'Eco Starter', min: 0, max: 99 },
+  { name: 'Green Explorer', min: 100, max: 299 },
+  { name: 'Eco Champion', min: 300, max: 599 },
+  { name: 'Nature Guardian', min: 600, max: 999 },
+  { name: 'Planet Protector', min: 1000, max: Infinity }
+];
+
+const DEFAULT_CHALLENGES = [
+  { id: 'c1', title: 'Plastic-Free Day', desc: 'Avoid single-use plastic for one full day.', difficulty: 'Easy', duration: '1 day', reward: 50, progress: 0, status: 'available' },
+  { id: 'c2', title: 'Green Commute', desc: 'Walk, cycle, carpool, or use public transport for a week.', difficulty: 'Medium', duration: '7 days', reward: 80, progress: 0, status: 'available' },
+  { id: 'c3', title: 'Lights Out', desc: 'Reduce unnecessary lighting and electricity usage for 5 days.', difficulty: 'Easy', duration: '5 days', reward: 40, progress: 0, status: 'available' },
+  { id: 'c4', title: 'Water Warrior', desc: 'Practice water conservation actions for a week.', difficulty: 'Medium', duration: '7 days', reward: 70, progress: 0, status: 'available' },
+  { id: 'c5', title: 'Waste Segregation Week', desc: 'Properly separate waste for seven consecutive days.', difficulty: 'Hard', duration: '7 days', reward: 100, progress: 0, status: 'available' },
+  { id: 'c6', title: 'Bring Your Own Bottle', desc: 'Use only reusable bottles for 10 days.', difficulty: 'Easy', duration: '10 days', reward: 60, progress: 0, status: 'available' }
+];
+
+const DEFAULT_GOALS = [
+  { id: 'g1', title: 'Waste Recycling Target', category: 'Waste Management', target: 500, unit: 'kg', current: 248, custom: false },
+  { id: 'g2', title: 'Water Conservation', category: 'Water Conservation', target: 5000, unit: 'L', current: 3420, custom: false },
+  { id: 'g3', title: 'Energy Savings', category: 'Energy Conservation', target: 400, unit: 'kWh', current: 186, custom: false },
+  { id: 'g4', title: 'Trees Planted', category: 'Plantation', target: 100, unit: 'trees', current: 64, custom: false },
+  { id: 'g5', title: 'Plastic Avoided', category: 'Plastic Reduction', target: 1000, unit: 'items', current: 720, custom: false }
+];
+
+const DEFAULT_ACHIEVEMENTS = [
+  { id: 'a1', title: 'First Step', desc: 'Log your first eco activity.', icon: 'footprints', unlocked: false, progress: 0, target: 1 },
+  { id: 'a2', title: 'Recycler', desc: 'Recycle 10 kg of waste.', icon: 'recycle', unlocked: false, progress: 0, target: 10 },
+  { id: 'a3', title: 'Water Guardian', desc: 'Record 100 litres of water saved.', icon: 'droplets', unlocked: false, progress: 0, target: 100 },
+  { id: 'a4', title: 'Energy Saver', desc: 'Log 10 energy-saving activities.', icon: 'zap', unlocked: false, progress: 0, target: 10 },
+  { id: 'a5', title: 'Tree Friend', desc: 'Plant five trees.', icon: 'tree-deciduous', unlocked: false, progress: 0, target: 5 },
+  { id: 'a6', title: 'Eco Streak', desc: 'Log eco activities on five consecutive days.', icon: 'flame', unlocked: false, progress: 0, target: 5 },
+  { id: 'a7', title: 'Planet Protector', desc: 'Earn 500 eco points.', icon: 'globe', unlocked: false, progress: 0, target: 500 },
+  { id: 'a8', title: 'Challenge Champion', desc: 'Complete three challenges.', icon: 'trophy', unlocked: false, progress: 0, target: 3 }
+];
+
+const DEMO_ACTIVITIES = [
+  { id: 'd1', category: 'Waste Management', type: 'Waste recycled', qty: 12, unit: 'kg', location: 'Canteen', date: daysAgo(2), points: 10, desc: 'Demo', demo: true },
+  { id: 'd2', category: 'Water Conservation', type: 'Water saved', qty: 150, unit: 'L', location: 'Main Block', date: daysAgo(3), points: 10, desc: 'Demo', demo: true },
+  { id: 'd3', category: 'Plantation', type: 'Tree planted', qty: 3, unit: 'trees', location: 'Garden', date: daysAgo(5), points: 75, desc: 'Demo', demo: true },
+  { id: 'd4', category: 'Energy Conservation', type: 'Electricity saved', qty: 8, unit: 'kWh', location: 'Computer Lab', date: daysAgo(1), points: 10, desc: 'Demo', demo: true },
+  { id: 'd5', category: 'Plastic Reduction', type: 'Plastic avoided', qty: 25, unit: 'items', location: 'Library', date: daysAgo(4), points: 15, desc: 'Demo', demo: true },
+  { id: 'd6', category: 'Sustainable Transport', type: 'Cycled', qty: 5, unit: 'km', location: 'Parking Area', date: daysAgo(0), points: 15, desc: 'Demo', demo: true },
+  { id: 'd7', category: 'Waste Management', type: 'Composting', qty: 4, unit: 'kg', location: 'Garden', date: daysAgo(6), points: 15, desc: 'Demo', demo: true },
+  { id: 'd8', category: 'Water Conservation', type: 'Water saved', qty: 80, unit: 'L', location: 'Auditorium', date: daysAgo(7), points: 10, desc: 'Demo', demo: true }
+];
+
+const DEMO_REPORTS = [
+  { id: 'r1', category: 'Water leakage', location: 'Main Block', severity: 'Medium', status: 'Under Review', date: daysAgo(3), desc: 'Tap leaking near washroom.', demo: true },
+  { id: 'r2', category: 'Waste overflow', location: 'Canteen', severity: 'High', status: 'In Progress', date: daysAgo(1), desc: 'Bins overflowing after lunch.', demo: true },
+  { id: 'r3', category: 'Plastic pollution', location: 'Garden', severity: 'Low', status: 'Reported', date: daysAgo(5), desc: 'Plastic bottles near benches.', demo: true },
+  { id: 'r4', category: 'Electricity wastage', location: 'Computer Lab', severity: 'Medium', status: 'Resolved', date: daysAgo(8), desc: 'Lights left on overnight.', demo: true }
+];
+
+const DEMO_LEADERBOARD = [
+  { name: 'Aisha Patel', points: 1240, activities: 48, level: 'Planet Protector', avatar: 'A' },
+  { name: 'Rohan Mehta', points: 980, activities: 41, level: 'Nature Guardian', avatar: 'R' },
+  { name: 'Priya Sharma', points: 875, activities: 36, level: 'Nature Guardian', avatar: 'P' },
+  { name: 'Arjun Singh', points: 720, activities: 29, level: 'Nature Guardian', avatar: 'A' },
+  { name: 'Neha Gupta', points: 610, activities: 27, level: 'Nature Guardian', avatar: 'N' },
+  { name: 'Kabir Khan', points: 480, activities: 22, level: 'Eco Champion', avatar: 'K' },
+  { name: 'Ananya Reddy', points: 350, activities: 18, level: 'Eco Champion', avatar: 'A' },
+  { name: 'Vikram Joshi', points: 280, activities: 15, level: 'Green Explorer', avatar: 'V' },
+  { name: 'Sneha Iyer', points: 190, activities: 11, level: 'Green Explorer', avatar: 'S' },
+  { name: 'Dev Malhotra', points: 95, activities: 6, level: 'Eco Starter', avatar: 'D' }
+];
+
+const TIPS = [
+  { cat: 'Water', text: 'Report leaking taps promptly to prevent water waste.' },
+  { cat: 'Water', text: 'Turn off the tap while soaping hands or brushing teeth.' },
+  { cat: 'Water', text: 'Use a bucket instead of a hose when washing vehicles on campus.' },
+  { cat: 'Energy', text: 'Turn off lights and equipment when leaving a room.' },
+  { cat: 'Energy', text: 'Unplug chargers and devices when not in use.' },
+  { cat: 'Energy', text: 'Prefer natural light during daytime study sessions.' },
+  { cat: 'Waste', text: 'Separate recyclables from food waste before disposal.' },
+  { cat: 'Waste', text: 'Compost biodegradable canteen waste when facilities exist.' },
+  { cat: 'Waste', text: 'Avoid unnecessary printing; use digital notes instead.' },
+  { cat: 'Transport', text: 'Walk or cycle for short distances within campus.' },
+  { cat: 'Transport', text: 'Carpool with classmates for common routes.' },
+  { cat: 'Transport', text: 'Use public transport or campus shuttles when available.' },
+  { cat: 'Biodiversity', text: 'Support campus tree-planting and garden maintenance drives.' },
+  { cat: 'Biodiversity', text: 'Avoid trampling on green areas and flower beds.' },
+  { cat: 'Biodiversity', text: 'Participate in local biodiversity awareness events.' },
+  { cat: 'Plastic', text: 'Carry a reusable water bottle every day.' },
+  { cat: 'Plastic', text: 'Say no to single-use plastic cutlery in the canteen.' },
+  { cat: 'Plastic', text: 'Reuse plastic bags or switch to cloth bags for shopping.' },
+  { cat: 'Waste', text: 'Do not litter — use the nearest bin even if it means a short walk.' },
+  { cat: 'Energy', text: 'Set AC temperatures to moderate levels (24–26°C) to save energy.' }
+];
+
+function daysAgo(n) {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+// ===================== STATE =====================
+let state = {
+  activities: [],
+  reports: [],
+  challenges: [],
+  goals: [],
+  notifications: [],
+  profile: { name: 'Student', username: 'student', avatar: 'S' },
+  preferences: { theme: 'light' },
+  favorites: [],
+  achievements: [],
+  tipIndex: 0,
+  tipFilter: 'all',
+  chalFilter: 'all',
+  lbMode: 'alltime'
+};
+
+let charts = {};
+let confirmCallback = null;
+
+// ===================== STORAGE =====================
+function load(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (raw === null) return fallback;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Load error', key, e);
+    return fallback;
+  }
+}
+
+function save(key, data) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Save error', key, e);
+    toast('Storage full or unavailable', 'error');
+  }
+}
+
+function initData() {
+  state.activities = load(STORAGE_KEYS.activities, null);
+  if (!state.activities) {
+    state.activities = DEMO_ACTIVITIES.map(a => ({ ...a }));
+    save(STORAGE_KEYS.activities, state.activities);
+  }
+
+  state.reports = load(STORAGE_KEYS.reports, null);
+  if (!state.reports) {
+    state.reports = DEMO_REPORTS.map(r => ({ ...r }));
+    save(STORAGE_KEYS.reports, state.reports);
+  }
+
+  state.challenges = load(STORAGE_KEYS.challenges, null);
+  if (!state.challenges) {
+    state.challenges = DEFAULT_CHALLENGES.map(c => ({ ...c }));
+    save(STORAGE_KEYS.challenges, state.challenges);
+  }
+
+  state.goals = load(STORAGE_KEYS.goals, null);
+  if (!state.goals) {
+    state.goals = DEFAULT_GOALS.map(g => ({ ...g }));
+    save(STORAGE_KEYS.goals, state.goals);
+  }
+
+  state.notifications = load(STORAGE_KEYS.notifications, []);
+  state.profile = load(STORAGE_KEYS.profile, { name: 'Student', username: 'student', avatar: 'S' });
+  state.preferences = load(STORAGE_KEYS.preferences, { theme: 'light' });
+  state.favorites = load(STORAGE_KEYS.favorites, []);
+  state.achievements = load(STORAGE_KEYS.achievements, null);
+  if (!state.achievements) {
+    state.achievements = DEFAULT_ACHIEVEMENTS.map(a => ({ ...a }));
+    save(STORAGE_KEYS.achievements, state.achievements);
+  }
+
+  // Apply theme
+  if (state.preferences.theme === 'dark') {
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+}
+
+// ===================== HELPERS =====================
+function uid() {
+  return 'id_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function getLevel(points) {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (points >= LEVELS[i].min) return LEVELS[i];
+  }
+  return LEVELS[0];
+}
+
+function getNextLevel(points) {
+  const cur = getLevel(points);
+  const idx = LEVELS.indexOf(cur);
+  return LEVELS[idx + 1] || null;
+}
+
+function calcPoints(activities) {
+  return activities.reduce((s, a) => s + (a.points || 0), 0);
+}
+
+function calcMetrics(activities) {
+  const m = { waste: 0, water: 0, energy: 0, trees: 0, plastic: 0 };
+  activities.forEach(a => {
+    if (a.category === 'Waste Management' && (a.type.includes('recycled') || a.type.includes('Compost') || a.type.includes('E-waste'))) m.waste += a.qty;
+    if (a.category === 'Water Conservation' && a.type.includes('saved')) m.water += a.qty;
+    if (a.category === 'Energy Conservation' && a.type.includes('Electricity')) m.energy += a.qty;
+    if (a.category === 'Plantation' && a.type.includes('Tree')) m.trees += a.qty;
+    if (a.category === 'Plastic Reduction' && (a.type.includes('avoided') || a.type.includes('Plastic'))) m.plastic += a.qty;
+  });
+  return m;
+}
+
+function calcEcoScore(activities) {
+  const pts = calcPoints(activities);
+  const m = calcMetrics(activities);
+  let score = 40;
+  score += Math.min(20, m.waste / 25);
+  score += Math.min(15, m.water / 300);
+  score += Math.min(10, m.energy / 40);
+  score += Math.min(10, m.trees / 10);
+  score += Math.min(5, m.plastic / 200);
+  score = Math.min(100, Math.round(score));
+  return score;
+}
+
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = `<span class="msg">${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(40px)'; setTimeout(() => t.remove(), 300); }, 3200);
+}
+
+function addNotification(text) {
+  const n = { id: uid(), text, time: new Date().toISOString(), read: false };
+  state.notifications.unshift(n);
+  if (state.notifications.length > 50) state.notifications.pop();
+  save(STORAGE_KEYS.notifications, state.notifications);
+  renderNotifications();
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+function confirmAction(title, msg, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  confirmCallback = cb;
+  openModal('confirmModal');
+}
+
+// ===================== NAVIGATION =====================
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-page="${page}"]`);
+  if (nav) nav.classList.add('active');
+  // close mobile sidebar
+  document.getElementById('sidebar').classList.remove('mobile-open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+
+  if (page === 'analytics') setTimeout(renderCharts, 50);
+  if (page === 'overview') renderOverview();
+  if (page === 'activities') renderActivities();
+  if (page === 'goals') renderGoals();
+  if (page === 'challenges') renderChallenges();
+  if (page === 'leaderboard') renderLeaderboard();
+  if (page === 'reports') renderReports();
+  if (page === 'achievements') renderAchievements();
+  if (page === 'tips') renderTips();
+  if (page === 'profile') renderProfile();
+  if (page === 'map') { /* ready */ }
+  lucide.createIcons();
+}
+
+// ===================== ACTIVITY MODAL =====================
+function updateActTypeOptions() {
+  const cat = document.getElementById('actCategory').value;
+  const types = ACTIVITY_TYPES[cat] || [];
+  const typeSel = document.getElementById('actType');
+  typeSel.innerHTML = types.map(t => `<option value="${t.type}" data-unit="${t.unit}" data-points="${t.points}">${t.type}</option>`).join('');
+  updateActUnit();
+}
+
+function updateActUnit() {
+  const opt = document.getElementById('actType').selectedOptions[0];
+  const unit = opt ? opt.dataset.unit : 'count';
+  const unitSel = document.getElementById('actUnit');
+  unitSel.innerHTML = `<option value="${unit}">${unit}</option>`;
+}
+
+function openActivityModal(editId = null) {
+  document.getElementById('actEditId').value = editId || '';
+  document.getElementById('actModalTitle').textContent = editId ? 'Edit Activity' : 'Log Eco Activity';
+  document.getElementById('actDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('actDesc').value = '';
+  document.getElementById('actQty').value = 1;
+  if (editId) {
+    const a = state.activities.find(x => x.id === editId);
+    if (a) {
+      document.getElementById('actCategory').value = a.category;
+      updateActTypeOptions();
+      document.getElementById('actType').value = a.type;
+      updateActUnit();
+      document.getElementById('actQty').value = a.qty;
+      document.getElementById('actLocation').value = a.location;
+      document.getElementById('actDate').value = a.date;
+      document.getElementById('actDesc').value = a.desc || '';
+    }
+  } else {
+    updateActTypeOptions();
+  }
+  openModal('activityModal');
+  lucide.createIcons();
+}
+
+function saveActivity() {
+  const editId = document.getElementById('actEditId').value;
+  const category = document.getElementById('actCategory').value;
+  const type = document.getElementById('actType').value;
+  const qty = parseFloat(document.getElementById('actQty').value);
+  const unit = document.getElementById('actUnit').value;
+  const location = document.getElementById('actLocation').value;
+  const date = document.getElementById('actDate').value;
+  const desc = document.getElementById('actDesc').value.trim();
+
+  if (!qty || qty <= 0) { toast('Please enter a valid quantity', 'error'); return; }
+  if (!date) { toast('Please select a date', 'error'); return; }
+
+  const typeInfo = (ACTIVITY_TYPES[category] || []).find(t => t.type === type);
+  let points = typeInfo ? typeInfo.points : 10;
+  if (type === 'Tree planted') points = 25 * qty;
+
+  if (editId) {
+    const idx = state.activities.findIndex(a => a.id === editId);
+    if (idx >= 0) {
+      state.activities[idx] = { ...state.activities[idx], category, type, qty, unit, location, date, desc, points };
+    }
+    toast('Activity updated', 'success');
+  } else {
+    const act = { id: uid(), category, type, qty, unit, location, date, points, desc, demo: false };
+    state.activities.unshift(act);
+    toast(`Activity logged! +${points} points`, 'success');
+    addNotification(`Logged: ${type} (${qty} ${unit})`);
+  }
+
+  save(STORAGE_KEYS.activities, state.activities);
+  updateGoalsFromActivities();
+  checkAchievements();
+  closeModal('activityModal');
+  renderOverview();
+  renderActivities();
+  if (document.getElementById('page-analytics').classList.contains('active')) renderCharts();
+}
+
+// ===================== GOALS =====================
+function updateGoalsFromActivities() {
+  const m = calcMetrics(state.activities);
+  state.goals.forEach(g => {
+    if (g.custom) return;
+    if (g.category === 'Waste Management') g.current = Math.round(m.waste * 10) / 10;
+    if (g.category === 'Water Conservation') g.current = Math.round(m.water);
+    if (g.category === 'Energy Conservation') g.current = Math.round(m.energy * 10) / 10;
+    if (g.category === 'Plantation') g.current = Math.round(m.trees);
+    if (g.category === 'Plastic Reduction') g.current = Math.round(m.plastic);
+  });
+  // custom goals: sum matching category quantities roughly
+  state.goals.filter(g => g.custom).forEach(g => {
+    const sum = state.activities
+      .filter(a => a.category === g.category)
+      .reduce((s, a) => s + a.qty, 0);
+    g.current = Math.round(sum * 10) / 10;
+  });
+  save(STORAGE_KEYS.goals, state.goals);
+}
+
+function openGoalModal(editId = null) {
+  document.getElementById('goalEditId').value = editId || '';
+  document.getElementById('goalModalTitle').textContent = editId ? 'Edit Goal' : 'Add Custom Goal';
+  if (editId) {
+    const g = state.goals.find(x => x.id === editId);
+    if (g) {
+      document.getElementById('goalTitle').value = g.title;
+      document.getElementById('goalCategory').value = g.category;
+      document.getElementById('goalTarget').value = g.target;
+      document.getElementById('goalUnit').value = g.unit;
+    }
+  } else {
+    document.getElementById('goalTitle').value = '';
+    document.getElementById('goalTarget').value = 100;
+    document.getElementById('goalUnit').value = '';
+  }
+  openModal('goalModal');
+}
+
+function saveGoal() {
+  const editId = document.getElementById('goalEditId').value;
+  const title = document.getElementById('goalTitle').value.trim();
+  const category = document.getElementById('goalCategory').value;
+  const target = parseFloat(document.getElementById('goalTarget').value);
+  const unit = document.getElementById('goalUnit').value.trim() || 'units';
+  if (!title || !target) { toast('Please fill title and target', 'error'); return; }
+
+  if (editId) {
+    const g = state.goals.find(x => x.id === editId);
+    if (g) { g.title = title; g.category = category; g.target = target; g.unit = unit; }
+    toast('Goal updated', 'success');
+  } else {
+    state.goals.push({ id: uid(), title, category, target, unit, current: 0, custom: true });
+    toast('Goal added', 'success');
+  }
+  updateGoalsFromActivities();
+  save(STORAGE_KEYS.goals, state.goals);
+  closeModal('goalModal');
+  renderGoals();
+}
+
+function deleteGoal(id) {
+  confirmAction('Delete Goal', 'Remove this custom goal?', () => {
+    state.goals = state.goals.filter(g => g.id !== id);
+    save(STORAGE_KEYS.goals, state.goals);
+    renderGoals();
+    toast('Goal deleted', 'info');
+  });
+}
+
+// ===================== CHALLENGES =====================
+function joinChallenge(id) {
+  const c = state.challenges.find(x => x.id === id);
+  if (!c || c.status !== 'available') return;
+  c.status = 'active';
+  c.progress = 0;
+  save(STORAGE_KEYS.challenges, state.challenges);
+  addNotification(`Joined challenge: ${c.title}`);
+  toast(`Joined "${c.title}"`, 'success');
+  renderChallenges();
+}
+
+function leaveChallenge(id) {
+  confirmAction('Leave Challenge', 'Leave this challenge? Progress will be lost.', () => {
+    const c = state.challenges.find(x => x.id === id);
+    if (c) { c.status = 'available'; c.progress = 0; }
+    save(STORAGE_KEYS.challenges, state.challenges);
+    renderChallenges();
+    toast('Left challenge', 'info');
+  });
+}
+
+function progressChallenge(id) {
+  const c = state.challenges.find(x => x.id === id);
+  if (!c || c.status !== 'active') return;
+  c.progress = Math.min(100, c.progress + 20);
+  if (c.progress >= 100) {
+    c.status = 'completed';
+    // award points once
+    if (!c.rewarded) {
+      c.rewarded = true;
+      const bonus = { id: uid(), category: 'Challenge', type: c.title + ' completed', qty: 1, unit: 'challenge', location: 'Campus', date: new Date().toISOString().slice(0,10), points: c.reward, desc: 'Challenge reward', demo: false };
+      state.activities.unshift(bonus);
+      save(STORAGE_KEYS.activities, state.activities);
+      addNotification(`Challenge completed: ${c.title} (+${c.reward} pts)`);
+      toast(`Challenge complete! +${c.reward} points`, 'success');
+      checkAchievements();
+    }
+  }
+  save(STORAGE_KEYS.challenges, state.challenges);
+  renderChallenges();
+  renderOverview();
+}
+
+// ===================== REPORTS =====================
+function openReportModal() {
+  document.getElementById('repDate').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('repDesc').value = '';
+  document.getElementById('repImagePreview').style.display = 'none';
+  document.getElementById('repImage').value = '';
+  openModal('reportModal');
+  lucide.createIcons();
+}
+
+function saveReport() {
+  const category = document.getElementById('repCategory').value;
+  const location = document.getElementById('repLocation').value;
+  const severity = document.getElementById('repSeverity').value;
+  const desc = document.getElementById('repDesc').value.trim();
+  const date = document.getElementById('repDate').value;
+  if (!desc) { toast('Please describe the issue', 'error'); return; }
+
+  const r = { id: uid(), category, location, severity, status: 'Reported', date, desc, demo: false };
+  state.reports.unshift(r);
+  save(STORAGE_KEYS.reports, state.reports);
+  addNotification(`Issue reported: ${category} at ${location}`);
+  toast('Report submitted (stored locally)', 'success');
+  closeModal('reportModal');
+  renderReports();
+}
+
+function changeReportStatus(id, status) {
+  const r = state.reports.find(x => x.id === id);
+  if (r) {
+    r.status = status;
+    save(STORAGE_KEYS.reports, state.reports);
+    renderReports();
+    toast(`Status updated to ${status}`, 'info');
+  }
+}
+
+function deleteReport(id) {
+  confirmAction('Delete Report', 'Delete this report permanently?', () => {
+    state.reports = state.reports.filter(r => r.id !== id);
+    save(STORAGE_KEYS.reports, state.reports);
+    renderReports();
+    toast('Report deleted', 'info');
+  });
+}
+
+// ===================== ACHIEVEMENTS =====================
+function checkAchievements() {
+  const acts = state.activities;
+  const pts = calcPoints(acts);
+  const m = calcMetrics(acts);
+  const energyCount = acts.filter(a => a.category === 'Energy Conservation').length;
+  const completedChals = state.challenges.filter(c => c.status === 'completed').length;
+
+  // streak
+  const dates = [...new Set(acts.map(a => a.date))].sort().reverse();
+  let streak = 0;
+  let d = new Date();
+  for (let i = 0; i < 10; i++) {
+    const ds = d.toISOString().slice(0, 10);
+    if (dates.includes(ds)) { streak++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+
+  const checks = [
+    { id: 'a1', progress: acts.length, target: 1 },
+    { id: 'a2', progress: m.waste, target: 10 },
+    { id: 'a3', progress: m.water, target: 100 },
+    { id: 'a4', progress: energyCount, target: 10 },
+    { id: 'a5', progress: m.trees, target: 5 },
+    { id: 'a6', progress: streak, target: 5 },
+    { id: 'a7', progress: pts, target: 500 },
+    { id: 'a8', progress: completedChals, target: 3 }
+  ];
+
+  checks.forEach(ch => {
+    const a = state.achievements.find(x => x.id === ch.id);
+    if (!a) return;
+    a.progress = Math.min(ch.progress, ch.target);
+    if (!a.unlocked && a.progress >= a.target) {
+      a.unlocked = true;
+      addNotification(`Achievement unlocked: ${a.title}!`);
+      toast(`🏆 Achievement unlocked: ${a.title}`, 'success');
+    }
+  });
+  save(STORAGE_KEYS.achievements, state.achievements);
+}
+
+// ===================== RENDERERS =====================
+function renderOverview() {
+  const pts = calcPoints(state.activities);
+  const m = calcMetrics(state.activities);
+  const level = getLevel(pts);
+  const next = getNextLevel(pts);
+  const score = calcEcoScore(state.activities);
+
+  // Welcome
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('welcomeMsg').textContent = `${greet}, ${state.profile.name} 🌱`;
+  document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  // Stats
+  document.getElementById('statCards').innerHTML = `
+    <div class="stat-card"><div class="icon-wrap green"><i data-lucide="recycle"></i></div><div class="label">Waste Recycled</div><div class="value">${m.waste.toFixed(0)} kg</div><div class="trend up">Demo + user data</div></div>
+    <div class="stat-card"><div class="icon-wrap blue"><i data-lucide="droplets"></i></div><div class="label">Water Saved</div><div class="value">${m.water.toFixed(0)} L</div><div class="trend up">Demo + user data</div></div>
+    <div class="stat-card"><div class="icon-wrap amber"><i data-lucide="zap"></i></div><div class="label">Energy Saved</div><div class="value">${m.energy.toFixed(0)} kWh</div><div class="trend up">Demo + user data</div></div>
+    <div class="stat-card"><div class="icon-wrap teal"><i data-lucide="tree-deciduous"></i></div><div class="label">Trees Planted</div><div class="value">${m.trees}</div><div class="trend up">Demo + user data</div></div>
+    <div class="stat-card"><div class="icon-wrap purple"><i data-lucide="package"></i></div><div class="label">Plastic Avoided</div><div class="value">${m.plastic}</div><div class="trend up">items</div></div>
+    <div class="stat-card"><div class="icon-wrap rose"><i data-lucide="star"></i></div><div class="label">Eco Points</div><div class="value">${pts}</div><div class="trend">${level.name}</div></div>
+  `;
+
+  // Score
+  const circumference = 2 * Math.PI * 50;
+  const offset = circumference - (score / 100) * circumference;
+  document.getElementById('scoreCircle').style.strokeDashoffset = offset;
+  document.getElementById('scoreNum').textContent = score;
+  document.getElementById('scoreStatus').textContent = score >= 80 ? 'Excellent' : score >= 60 ? 'Good Progress' : score >= 40 ? 'Getting Started' : 'Needs Attention';
+  document.getElementById('scoreDesc').textContent = 'Illustrative EcoScore based on logged activities. Not a scientifically validated metric.';
+
+  // Level bar
+  document.getElementById('dashLevel').textContent = level.name;
+  document.getElementById('dashPoints').textContent = pts + ' points';
+  if (next) {
+    const range = next.min - level.min;
+    const prog = pts - level.min;
+    const pct = Math.min(100, (prog / range) * 100);
+    document.getElementById('dashNext').textContent = `Next: ${next.name} (${next.min - pts} pts)`;
+    document.getElementById('dashLevelBar').style.width = pct + '%';
+  } else {
+    document.getElementById('dashNext').textContent = 'Max level reached!';
+    document.getElementById('dashLevelBar').style.width = '100%';
+  }
+
+  // Recent
+  const recent = [...state.activities].sort((a,b) => b.date.localeCompare(a.date)).slice(0, 5);
+  document.getElementById('recentActivitiesBody').innerHTML = recent.length ? recent.map(a => `
+    <tr>
+      <td>${a.type}${a.demo ? ' <span class="badge badge-gray">Demo</span>' : ''}</td>
+      <td><span class="badge badge-green">${a.category}</span></td>
+      <td>${a.qty} ${a.unit}</td>
+      <td>${a.date}</td>
+      <td>+${a.points}</td>
+    </tr>
+  `).join('') : '<tr><td colspan="5" class="text-muted">No activities yet</td></tr>';
+
+  // Top bar
+  document.getElementById('topName').textContent = state.profile.name;
+  document.getElementById('topLevel').textContent = level.name;
+  document.getElementById('topAvatar').textContent = state.profile.avatar;
+  lucide.createIcons();
+}
+
+function renderActivities() {
+  const search = (document.getElementById('actSearch')?.value || '').toLowerCase();
+  const cat = document.getElementById('actCatFilter')?.value || '';
+  const sort = document.getElementById('actSort')?.value || 'date-desc';
+
+  let list = [...state.activities];
+  if (search) list = list.filter(a => a.type.toLowerCase().includes(search) || a.location.toLowerCase().includes(search) || (a.desc||'').toLowerCase().includes(search));
+  if (cat) list = list.filter(a => a.category === cat);
+  list.sort((a,b) => {
+    if (sort === 'date-asc') return a.date.localeCompare(b.date);
+    if (sort === 'points-desc') return b.points - a.points;
+    return b.date.localeCompare(a.date);
+  });
+
+  const body = document.getElementById('activitiesBody');
+  const empty = document.getElementById('actEmpty');
+  if (!list.length) {
+    body.innerHTML = '';
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    body.innerHTML = list.map(a => `
+      <tr>
+        <td>${a.type}${a.demo ? ' <span class="badge badge-gray">Demo</span>' : ''}</td>
+        <td><span class="badge badge-green">${a.category.split(' ')[0]}</span></td>
+        <td>${a.qty} ${a.unit}</td>
+        <td>${a.location}</td>
+        <td>${a.date}</td>
+        <td>+${a.points}</td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="openActivityModal('${a.id}')" title="Edit"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+          <button class="btn btn-ghost btn-sm" onclick="deleteActivity('${a.id}')" title="Delete"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+        </td>
+      </tr>
+    `).join('');
+  }
+  lucide.createIcons();
+}
+
+function deleteActivity(id) {
+  confirmAction('Delete Activity', 'Remove this activity? Points will be recalculated.', () => {
+    state.activities = state.activities.filter(a => a.id !== id);
+    save(STORAGE_KEYS.activities, state.activities);
+    updateGoalsFromActivities();
+    checkAchievements();
+    renderActivities();
+    renderOverview();
+    toast('Activity deleted', 'info');
+  });
+}
+
+function exportCSV() {
+  const headers = ['ID','Category','Type','Quantity','Unit','Location','Date','Points','Description'];
+  const rows = state.activities.map(a => [a.id, a.category, a.type, a.qty, a.unit, a.location, a.date, a.points, `"${(a.desc||'').replace(/"/g,'""')}"`]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'ecotrack_activities.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exported', 'success');
+}
+
+function renderGoals() {
+  const grid = document.getElementById('goalsGrid');
+  grid.innerHTML = state.goals.map(g => {
+    const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+    const remaining = Math.max(0, g.target - g.current);
+    const status = pct >= 100 ? 'Completed' : pct >= 60 ? 'On Track' : 'In Progress';
+    return `
+      <div class="goal-card">
+        <div class="goal-header">
+          <div>
+            <h4>${g.title}</h4>
+            <span class="badge ${pct>=100?'badge-green':pct>=60?'badge-blue':'badge-amber'}">${status}</span>
+          </div>
+          ${g.custom ? `<div class="goal-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openGoalModal('${g.id}')"><i data-lucide="pencil" style="width:14px;height:14px;"></i></button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteGoal('${g.id}')"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+          </div>` : ''}
+        </div>
+        <div class="flex-between text-sm mb-3">
+          <span>${g.current} / ${g.target} ${g.unit}</span>
+          <span class="font-semibold">${pct}%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <p class="text-sm text-muted mt-2">${remaining > 0 ? remaining + ' ' + g.unit + ' remaining' : 'Target reached!'}</p>
+      </div>
+    `;
+  }).join('');
+  lucide.createIcons();
+}
+
+function renderChallenges() {
+  const filter = state.chalFilter;
+  let list = state.challenges;
+  if (filter !== 'all') list = list.filter(c => c.status === filter);
+
+  const grid = document.getElementById('challengesGrid');
+  grid.innerHTML = list.map(c => {
+    const diffColor = c.difficulty === 'Easy' ? 'badge-green' : c.difficulty === 'Medium' ? 'badge-amber' : 'badge-red';
+    let actions = '';
+    if (c.status === 'available') actions = `<button class="btn btn-emerald btn-sm w-full" onclick="joinChallenge('${c.id}')">Join Challenge</button>`;
+    else if (c.status === 'active') actions = `
+      <div class="progress-bar mb-3"><div class="progress-fill" style="width:${c.progress}%"></div></div>
+      <div class="flex gap-2">
+        <button class="btn btn-emerald btn-sm" style="flex:1" onclick="progressChallenge('${c.id}')">Mark Progress</button>
+        <button class="btn btn-outline btn-sm" onclick="leaveChallenge('${c.id}')">Leave</button>
+      </div>`;
+    else actions = `<span class="badge badge-green">Completed · +${c.reward} pts</span>`;
+
+    return `
+      <div class="challenge-card">
+        <div class="diff"><span class="badge ${diffColor}">${c.difficulty}</span></div>
+        <h3>${c.title}</h3>
+        <p>${c.desc}</p>
+        <div class="challenge-meta">
+          <span><i data-lucide="clock" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> ${c.duration}</span>
+          <span><i data-lucide="star" style="width:14px;height:14px;display:inline;vertical-align:middle;"></i> ${c.reward} pts</span>
+        </div>
+        ${actions}
+      </div>
+    `;
+  }).join('') || '<div class="empty-state"><h3>No challenges in this filter</h3></div>';
+  lucide.createIcons();
+}
+
+function renderLeaderboard() {
+  const pts = calcPoints(state.activities);
+  const level = getLevel(pts);
+  const userEntry = { name: state.profile.name + ' (You)', points: pts, activities: state.activities.length, level: level.name, avatar: state.profile.avatar, isUser: true };
+
+  let list = [...DEMO_LEADERBOARD];
+  // inject user if has points
+  if (pts > 0) {
+    list.push(userEntry);
+    list.sort((a,b) => b.points - a.points);
+  }
+  if (state.lbMode === 'weekly') {
+    // simulate weekly: scale points
+    list = list.map((x,i) => ({ ...x, points: Math.round(x.points * (0.3 + Math.random()*0.2)) }));
+    list.sort((a,b) => b.points - a.points);
+  }
+
+  const container = document.getElementById('leaderboardList');
+  container.innerHTML = list.map((s, i) => {
+    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'normal';
+    return `
+      <div class="lb-item" style="${s.isUser ? 'background:var(--mint);' : ''}">
+        <div class="lb-rank ${rankClass}">${i + 1}</div>
+        <div class="avatar">${s.avatar}</div>
+        <div class="lb-info">
+          <div class="name">${s.name}</div>
+          <div class="meta">${s.activities} activities · ${s.level}</div>
+        </div>
+        <div class="lb-points">${s.points} pts</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderReports() {
+  const search = (document.getElementById('reportSearch')?.value || '').toLowerCase();
+  const cat = document.getElementById('reportCatFilter')?.value || '';
+  const status = document.getElementById('reportStatusFilter')?.value || '';
+
+  let list = [...state.reports];
+  if (search) list = list.filter(r => r.category.toLowerCase().includes(search) || r.location.toLowerCase().includes(search) || (r.desc||'').toLowerCase().includes(search));
+  if (cat) list = list.filter(r => r.category === cat);
+  if (status) list = list.filter(r => r.status === status);
+
+  // stats
+  const counts = { Reported: 0, 'Under Review': 0, 'In Progress': 0, Resolved: 0 };
+  state.reports.forEach(r => { if (counts[r.status] !== undefined) counts[r.status]++; });
+  document.getElementById('reportStats').innerHTML = `
+    <div class="stat-card"><div class="label">Reported</div><div class="value">${counts.Reported}</div></div>
+    <div class="stat-card"><div class="label">Under Review</div><div class="value">${counts['Under Review']}</div></div>
+    <div class="stat-card"><div class="label">In Progress</div><div class="value">${counts['In Progress']}</div></div>
+    <div class="stat-card"><div class="label">Resolved</div><div class="value">${counts.Resolved}</div></div>
+  `;
+
+  const body = document.getElementById('reportsBody');
+  const empty = document.getElementById('reportEmpty');
+  if (!list.length) {
+    body.innerHTML = '';
+    empty.classList.remove('hidden');
+  } else {
+    empty.classList.add('hidden');
+    body.innerHTML = list.map(r => {
+      const sev = r.severity === 'Critical' || r.severity === 'High' ? 'badge-red' : r.severity === 'Medium' ? 'badge-amber' : 'badge-gray';
+      const st = r.status === 'Resolved' ? 'badge-green' : r.status === 'In Progress' ? 'badge-blue' : r.status === 'Under Review' ? 'badge-amber' : 'badge-gray';
+      return `
+        <tr>
+          <td>${r.category}${r.demo ? ' <span class="badge badge-gray">Demo</span>' : ''}</td>
+          <td>${r.location}</td>
+          <td><span class="badge ${sev}">${r.severity}</span></td>
+          <td>
+            <select onchange="changeReportStatus('${r.id}', this.value)" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--text-dark);font-size:0.8rem;">
+              ${['Reported','Under Review','In Progress','Resolved'].map(s => `<option value="${s}" ${s===r.status?'selected':''}>${s}</option>`).join('')}
+            </select>
+          </td>
+          <td>${r.date}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" onclick="alert('${(r.desc||'').replace(/'/g,"\\'")}')" title="View"><i data-lucide="eye" style="width:14px;height:14px;"></i></button>
+            <button class="btn btn-ghost btn-sm" onclick="deleteReport('${r.id}')" title="Delete"><i data-lucide="trash-2" style="width:14px;height:14px;"></i></button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+  lucide.createIcons();
+}
+
+function renderAchievements() {
+  const grid = document.getElementById('achievementsGrid');
+  grid.innerHTML = state.achievements.map(a => `
+    <div class="ach-card ${a.unlocked ? 'unlocked' : 'locked'}">
+      <div class="ach-icon"><i data-lucide="${a.icon}"></i></div>
+      <h4>${a.title}</h4>
+      <p>${a.desc}</p>
+      <div class="progress-bar mt-2" style="height:6px;"><div class="progress-fill" style="width:${Math.min(100,(a.progress/a.target)*100)}%"></div></div>
+      <p class="text-sm mt-2">${a.unlocked ? '✓ Unlocked' : `${Math.floor(a.progress)}/${a.target}`}</p>
+    </div>
+  `).join('');
+  lucide.createIcons();
+}
+
+function renderTips() {
+  let tips = TIPS;
+  if (state.tipFilter === 'favorites') {
+    tips = TIPS.filter((_, i) => state.favorites.includes(i));
+  } else if (state.tipFilter !== 'all') {
+    tips = TIPS.filter(t => t.cat === state.tipFilter);
+  }
+  if (!tips.length) {
+    document.getElementById('tipCat').textContent = '—';
+    document.getElementById('tipText').textContent = 'No tips in this filter. Add some favorites!';
+    return;
+  }
+  if (state.tipIndex >= tips.length) state.tipIndex = 0;
+  const t = tips[state.tipIndex];
+  const globalIdx = TIPS.indexOf(t);
+  document.getElementById('tipCat').textContent = t.cat;
+  document.getElementById('tipText').textContent = t.text;
+  const favBtn = document.getElementById('favTip');
+  favBtn.innerHTML = state.favorites.includes(globalIdx)
+    ? '<i data-lucide="star" style="width:16px;height:16px;fill:currentColor;"></i> Favorited'
+    : '<i data-lucide="star" style="width:16px;height:16px;"></i> Favorite';
+
+  // tip of day
+  const dayIdx = new Date().getDate() % TIPS.length;
+  document.getElementById('tipOfDay').textContent = TIPS[dayIdx].text;
+  lucide.createIcons();
+}
+
+function renderProfile() {
+  const pts = calcPoints(state.activities);
+  const level = getLevel(pts);
+  const m = calcMetrics(state.activities);
+  const completed = state.challenges.filter(c => c.status === 'completed').length;
+  const joined = state.challenges.filter(c => c.status !== 'available').length;
+  const badges = state.achievements.filter(a => a.unlocked).length;
+
+  document.getElementById('profileName').textContent = state.profile.name;
+  document.getElementById('profileUsername').textContent = '@' + state.profile.username;
+  document.getElementById('profileLevel').textContent = level.name;
+  document.getElementById('profileAvatar').textContent = state.profile.avatar;
+  document.getElementById('editName').value = state.profile.name;
+  document.getElementById('editAvatar').value = state.profile.avatar;
+
+  document.getElementById('profileStats').innerHTML = `
+    <div><div class="text-muted text-sm">Eco Points</div><div class="font-semibold" style="font-size:1.2rem;">${pts}</div></div>
+    <div><div class="text-muted text-sm">Activities</div><div class="font-semibold" style="font-size:1.2rem;">${state.activities.length}</div></div>
+    <div><div class="text-muted text-sm">Challenges Joined</div><div class="font-semibold" style="font-size:1.2rem;">${joined}</div></div>
+    <div><div class="text-muted text-sm">Challenges Completed</div><div class="font-semibold" style="font-size:1.2rem;">${completed}</div></div>
+    <div><div class="text-muted text-sm">Badges Earned</div><div class="font-semibold" style="font-size:1.2rem;">${badges}</div></div>
+    <div><div class="text-muted text-sm">Waste Recycled</div><div class="font-semibold" style="font-size:1.2rem;">${m.waste.toFixed(0)} kg</div></div>
+  `;
+}
+
+function renderNotifications() {
+  const list = document.getElementById('notifList');
+  const unread = state.notifications.filter(n => !n.read).length;
+  document.getElementById('notifDot').classList.toggle('hidden', unread === 0);
+
+  if (!state.notifications.length) {
+    list.innerHTML = '<div class="notif-empty">No notifications yet</div>';
+    return;
+  }
+  list.innerHTML = state.notifications.slice(0, 20).map(n => `
+    <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n.id}">
+      <div>${n.text}</div>
+      <div class="time">${new Date(n.time).toLocaleString()}</div>
+    </div>
+  `).join('');
+}
+
+function renderCharts() {
+  const range = parseInt(document.getElementById('chartRange')?.value || 30);
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - range);
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+  const acts = state.activities.filter(a => a.date >= cutoffStr);
+
+  // Trend: group by week-ish
+  const cats = ['Waste Management', 'Water Conservation', 'Energy Conservation', 'Plantation'];
+  const labels = [];
+  const datasets = cats.map((c, i) => {
+    const colors = ['#0d9488', '#3b82f6', '#f59e0b', '#10b981'];
+    return { label: c.split(' ')[0], data: [], borderColor: colors[i], backgroundColor: colors[i] + '33', fill: true, tension: 0.3 };
+  });
+
+  // simple: last N days buckets
+  const dayMap = {};
+  for (let i = range - 1; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    labels.push(key.slice(5));
+    dayMap[key] = cats.map(() => 0);
+  }
+  acts.forEach(a => {
+    if (dayMap[a.date]) {
+      const idx = cats.indexOf(a.category);
+      if (idx >= 0) dayMap[a.date][idx] += a.qty;
+    }
+  });
+  Object.values(dayMap).forEach((vals, di) => {
+    vals.forEach((v, ci) => datasets[ci].data.push(v));
+  });
+
+  // destroy old
+  Object.values(charts).forEach(c => c.destroy());
+  charts = {};
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const gridColor = isDark ? '#334155' : '#e2e8f0';
+  const textColor = isDark ? '#94a3b8' : '#64748b';
+
+  charts.trend = new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: { labels: labels.filter((_,i) => i % Math.ceil(range/10) === 0 || i === labels.length-1), datasets: datasets.map(ds => ({
+      ...ds,
+      data: ds.data.filter((_,i) => i % Math.ceil(range/10) === 0 || i === ds.data.length-1)
+    })) },
+    options: {
+      responsive: true,
+      plugins: { legend: { labels: { color: textColor } } },
+      scales: {
+        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+      }
+    }
+  });
+
+  // Distribution
+  const distCounts = {};
+  acts.forEach(a => { distCounts[a.category] = (distCounts[a.category] || 0) + 1; });
+  charts.dist = new Chart(document.getElementById('distChart'), {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(distCounts),
+      datasets: [{ data: Object.values(distCounts), backgroundColor: ['#0d9488','#3b82f6','#f59e0b','#10b981','#8b5cf6','#ec4899'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+  });
+
+  // Waste composition (demo fixed + slight influence)
+  charts.waste = new Chart(document.getElementById('wasteChart'), {
+    type: 'pie',
+    data: {
+      labels: ['Plastic', 'Paper', 'Organic', 'Metal', 'Glass', 'Other'],
+      datasets: [{ data: [28, 22, 25, 10, 8, 7], backgroundColor: ['#0d9488','#3b82f6','#10b981','#f59e0b','#8b5cf6','#94a3b8'] }]
+    },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { color: textColor } } } }
+  });
+
+  // Frequency
+  const freqLabels = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const freqData = [0,0,0,0,0,0,0];
+  acts.forEach(a => {
+    const day = new Date(a.date).getDay();
+    freqData[day === 0 ? 6 : day - 1]++;
+  });
+  charts.freq = new Chart(document.getElementById('freqChart'), {
+    type: 'bar',
+    data: {
+      labels: freqLabels,
+      datasets: [{ label: 'Activities', data: freqData, backgroundColor: '#0d9488' }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: textColor }, grid: { color: gridColor } },
+        y: { ticks: { color: textColor }, grid: { color: gridColor }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+// ===================== MAP =====================
+function showMapLocation(name) {
+  document.querySelectorAll('.map-location').forEach(el => el.classList.toggle('active', el.dataset.loc === name));
+  const acts = state.activities.filter(a => a.location === name);
+  const reps = state.reports.filter(r => r.location === name);
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  document.getElementById('mapDetail').innerHTML = `
+    <h3>${name}</h3>
+    <div class="grid-2 mt-3" style="gap:12px;">
+      <div>
+        <div class="text-sm text-muted mb-3">Activities recorded</div>
+        <div class="font-semibold" style="font-size:1.3rem;">${acts.length}</div>
+        ${acts.slice(0,3).map(a => `<div class="text-sm mt-2">${a.type} · ${a.qty} ${a.unit}</div>`).join('') || '<div class="text-sm text-muted">None yet</div>'}
+      </div>
+      <div>
+        <div class="text-sm text-muted mb-3">Issues reported</div>
+        <div class="font-semibold" style="font-size:1.3rem;">${reps.length}</div>
+        ${reps.slice(0,3).map(r => `<div class="text-sm mt-2">${r.category} · ${r.status}</div>`).join('') || '<div class="text-sm text-muted">None</div>'}
+      </div>
+    </div>
+    <div class="mt-4 text-sm"><strong>Tip:</strong> ${tip.text}</div>
+  `;
+}
+
+// ===================== EVENT BINDINGS =====================
+function bindEvents() {
+  // Nav
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => navigate(btn.dataset.page));
+  });
+
+  // Mobile menu
+  document.getElementById('menuBtn').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('mobile-open');
+    document.getElementById('sidebarOverlay').classList.toggle('open');
+  });
+  document.getElementById('sidebarOverlay').addEventListener('click', () => {
+    document.getElementById('sidebar').classList.remove('mobile-open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  });
+
+  // Theme
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      state.preferences.theme = 'light';
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      state.preferences.theme = 'dark';
+    }
+    save(STORAGE_KEYS.preferences, state.preferences);
+    if (document.getElementById('page-analytics').classList.contains('active')) renderCharts();
+    lucide.createIcons();
+  });
+
+  // Notifications
+  document.getElementById('notifBtn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    document.getElementById('notifPanel').classList.toggle('open');
+  });
+  document.addEventListener('click', () => document.getElementById('notifPanel').classList.remove('open'));
+  document.getElementById('notifPanel').addEventListener('click', e => e.stopPropagation());
+  document.getElementById('markAllRead').addEventListener('click', () => {
+    state.notifications.forEach(n => n.read = true);
+    save(STORAGE_KEYS.notifications, state.notifications);
+    renderNotifications();
+  });
+  document.getElementById('clearNotifs').addEventListener('click', () => {
+    state.notifications = [];
+    save(STORAGE_KEYS.notifications, state.notifications);
+    renderNotifications();
+  });
+  document.getElementById('notifList').addEventListener('click', e => {
+    const item = e.target.closest('.notif-item');
+    if (item) {
+      const n = state.notifications.find(x => x.id === item.dataset.id);
+      if (n) { n.read = true; save(STORAGE_KEYS.notifications, state.notifications); renderNotifications(); }
+    }
+  });
+
+  // Profile chip
+  document.getElementById('profileChip').addEventListener('click', () => navigate('profile'));
+
+  // Activity form
+  document.getElementById('actCategory').addEventListener('change', updateActTypeOptions);
+  document.getElementById('actType').addEventListener('change', updateActUnit);
+  document.getElementById('saveActivityBtn').addEventListener('click', saveActivity);
+
+  // Report form
+  document.getElementById('saveReportBtn').addEventListener('click', saveReport);
+  document.getElementById('repImage').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      const img = document.getElementById('repImagePreview');
+      img.src = url; img.style.display = 'block';
+    }
+  });
+
+  // Goal
+  document.getElementById('saveGoalBtn').addEventListener('click', saveGoal);
+
+  // Confirm
+  document.getElementById('confirmOk').addEventListener('click', () => {
+    closeModal('confirmModal');
+    if (confirmCallback) confirmCallback();
+    confirmCallback = null;
+  });
+
+  // Filters
+  ['actSearch','actCatFilter','actSort'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', renderActivities);
+    if (el && el.tagName === 'SELECT') el.addEventListener('change', renderActivities);
+  });
+  ['reportSearch','reportCatFilter','reportStatusFilter'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', renderReports);
+    if (el && el.tagName === 'SELECT') el.addEventListener('change', renderReports);
+  });
+  document.getElementById('chartRange')?.addEventListener('change', renderCharts);
+
+  // Challenge filters
+  document.querySelectorAll('[data-chal-filter]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.chalFilter = btn.dataset.chalFilter;
+      document.querySelectorAll('[data-chal-filter]').forEach(b => {
+        b.classList.toggle('btn-emerald', b.dataset.chalFilter === state.chalFilter);
+        b.classList.toggle('btn-outline', b.dataset.chalFilter !== state.chalFilter);
+      });
+      renderChallenges();
+    });
+  });
+
+  // Leaderboard mode
+  document.querySelectorAll('[data-lb]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.lbMode = btn.dataset.lb;
+      document.querySelectorAll('[data-lb]').forEach(b => {
+        b.classList.toggle('btn-emerald', b.dataset.lb === state.lbMode);
+        b.classList.toggle('btn-outline', b.dataset.lb !== state.lbMode);
+      });
+      renderLeaderboard();
+    });
+  });
+
+  // Tips
+  document.getElementById('nextTip').addEventListener('click', () => {
+    let tips = TIPS;
+    if (state.tipFilter === 'favorites') tips = TIPS.filter((_,i) => state.favorites.includes(i));
+    else if (state.tipFilter !== 'all') tips = TIPS.filter(t => t.cat === state.tipFilter);
+    state.tipIndex = (state.tipIndex + 1) % Math.max(1, tips.length);
+    renderTips();
+  });
+  document.getElementById('prevTip').addEventListener('click', () => {
+    let tips = TIPS;
+    if (state.tipFilter === 'favorites') tips = TIPS.filter((_,i) => state.favorites.includes(i));
+    else if (state.tipFilter !== 'all') tips = TIPS.filter(t => t.cat === state.tipFilter);
+    state.tipIndex = (state.tipIndex - 1 + tips.length) % Math.max(1, tips.length);
+    renderTips();
+  });
+  document.getElementById('randomTip').addEventListener('click', () => {
+    let tips = TIPS;
+    if (state.tipFilter === 'favorites') tips = TIPS.filter((_,i) => state.favorites.includes(i));
+    else if (state.tipFilter !== 'all') tips = TIPS.filter(t => t.cat === state.tipFilter);
+    state.tipIndex = Math.floor(Math.random() * tips.length);
+    renderTips();
+  });
+  document.getElementById('favTip').addEventListener('click', () => {
+    let tips = TIPS;
+    if (state.tipFilter === 'favorites') tips = TIPS.filter((_,i) => state.favorites.includes(i));
+    else if (state.tipFilter !== 'all') tips = TIPS.filter(t => t.cat === state.tipFilter);
+    const t = tips[state.tipIndex];
+    const globalIdx = TIPS.indexOf(t);
+    if (state.favorites.includes(globalIdx)) {
+      state.favorites = state.favorites.filter(i => i !== globalIdx);
+    } else {
+      state.favorites.push(globalIdx);
+    }
+    save(STORAGE_KEYS.favorites, state.favorites);
+    renderTips();
+    toast(state.favorites.includes(globalIdx) ? 'Added to favorites' : 'Removed from favorites', 'info');
+  });
+  document.querySelectorAll('[data-tip-cat]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.tipFilter = btn.dataset.tipCat;
+      state.tipIndex = 0;
+      document.querySelectorAll('[data-tip-cat]').forEach(b => {
+        b.classList.toggle('btn-emerald', b.dataset.tipCat === state.tipFilter);
+        b.classList.toggle('btn-outline', b.dataset.tipCat !== state.tipFilter);
+      });
+      renderTips();
+    });
+  });
+
+  // Map
+  document.querySelectorAll('.map-location').forEach(el => {
+    el.addEventListener('click', () => showMapLocation(el.dataset.loc));
+  });
+
+  // Profile save
+  document.getElementById('saveProfile').addEventListener('click', () => {
+    const name = document.getElementById('editName').value.trim() || 'Student';
+    const avatar = (document.getElementById('editAvatar').value.trim() || name[0]).toUpperCase().slice(0,1);
+    state.profile.name = name;
+    state.profile.avatar = avatar;
+    state.profile.username = name.toLowerCase().replace(/\s+/g, '');
+    save(STORAGE_KEYS.profile, state.profile);
+    renderProfile();
+    renderOverview();
+    toast('Profile saved', 'success');
+  });
+
+  // Reset data
+  document.getElementById('resetDataBtn').addEventListener('click', () => {
+    confirmAction('Reset Demo Data', 'This will erase all your activities, reports, progress and restore the original demo data. Continue?', () => {
+      Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+      initData();
+      checkAchievements();
+      updateGoalsFromActivities();
+      renderOverview();
+      renderActivities();
+      renderGoals();
+      renderChallenges();
+      renderReports();
+      renderAchievements();
+      renderNotifications();
+      renderProfile();
+      toast('Demo data restored', 'info');
+    });
+  });
+
+  // Global search
+  document.getElementById('globalSearch').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) return;
+      // simple: go to activities with filter
+      document.getElementById('actSearch').value = q;
+      navigate('activities');
+    }
+  });
+
+  // Close modals on overlay click
+  document.querySelectorAll('.modal-overlay').forEach(ov => {
+    ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+  });
+}
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded', () => {
+  initData();
+  updateGoalsFromActivities();
+  checkAchievements();
+  bindEvents();
+  renderOverview();
+  renderNotifications();
+  updateActTypeOptions();
+  lucide.createIcons();
+});
+</script>
+</body>
+</html>
